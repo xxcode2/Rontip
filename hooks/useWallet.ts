@@ -35,18 +35,15 @@ export function useWallet() {
 
   // Check if wallet is already connected
   useEffect(() => {
-    let provider: any = null;
-    
+    if (typeof window === "undefined") return;
+
+    const provider = window.ethereum;
+    if (!provider || typeof provider !== "object") {
+      console.log("No wallet provider found");
+      return;
+    }
+
     const checkConnection = async () => {
-      if (typeof window === "undefined") return;
-
-      // Safely get provider with fallback
-      provider = window.ethereum;
-      if (!provider || typeof provider !== "object") {
-        console.log("No wallet provider found");
-        return;
-      }
-
       try {
         const accounts = await provider.request({ method: "eth_accounts" });
         if (accounts && accounts.length > 0) {
@@ -71,33 +68,33 @@ export function useWallet() {
     checkConnection();
 
     // Listen for account changes
-    if (provider && typeof provider.on === "function") {
-      const handleAccountsChanged = (accounts: string[]) => {
-        if (accounts.length === 0) {
-          setState({
-            address: null,
-            isConnected: false,
-            balance: "0",
-            isConnecting: false,
-            error: null,
-          });
-        } else {
-          setState((prev) => ({
-            ...prev,
-            address: accounts[0],
-            isConnected: true,
-          }));
-        }
-      };
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts.length === 0) {
+        setState({
+          address: null,
+          isConnected: false,
+          balance: "0",
+          isConnecting: false,
+          error: null,
+        });
+      } else {
+        setState((prev) => ({
+          ...prev,
+          address: accounts[0],
+          isConnected: true,
+        }));
+      }
+    };
 
+    if (typeof provider.on === "function") {
       provider.on("accountsChanged", handleAccountsChanged);
-      
-      return () => {
-        if (provider && typeof provider.removeListener === "function") {
-          provider.removeListener("accountsChanged", handleAccountsChanged);
-        }
-      };
     }
+    
+    return () => {
+      if (typeof provider.removeListener === "function") {
+        provider.removeListener("accountsChanged", handleAccountsChanged);
+      }
+    };
   }, []);
 
   const connect = useCallback(async () => {
