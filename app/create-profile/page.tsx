@@ -7,6 +7,10 @@ import { useWallet } from "@/hooks/useWallet";
 import { cn, truncateAddress } from "@/lib/utils";
 import { Wallet, User, FileText, Link as LinkIcon, Loader2, Check, Sparkles } from "lucide-react";
 
+// In a real app, this would be in a database
+// For demo purposes, we import and extend the creators array
+import { creators, type Creator } from "@/lib/data";
+
 export default function CreateProfilePage() {
   const { address, isConnected, connect, balance } = useWallet();
   
@@ -22,13 +26,41 @@ export default function CreateProfilePage() {
   });
   const [isCreating, setIsCreating] = useState(false);
   const [created, setCreated] = useState(false);
+  const [createdUsername, setCreatedUsername] = useState("");
 
   const categories = ["Developer", "Creator", "Educator", "Writer", "Gamer", "Other"];
 
   const handleSubmit = async () => {
+    if (!address) return;
+    
     setIsCreating(true);
-    // Simulate profile creation
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    // Simulate profile creation API call
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    
+    // Create the new creator profile
+    const newCreator: Creator = {
+      id: Date.now().toString(),
+      name: formData.name,
+      username: formData.username,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.username}`,
+      category: formData.category,
+      bio: formData.bio,
+      roninAddress: address,
+      totalReceived: "0",
+      tipCount: 0,
+      socialLinks: {
+        twitter: formData.twitter || undefined,
+        github: formData.github || undefined,
+        website: formData.website || undefined,
+      },
+    };
+    
+    // Add to creators array (in a real app, this would be saved to a database)
+    // Note: This persists in memory during the session
+    (creators as Creator[]).push(newCreator);
+    
+    setCreatedUsername(formData.username);
     setIsCreating(false);
     setCreated(true);
   };
@@ -79,11 +111,11 @@ export default function CreateProfilePage() {
                 Your profile is now live and ready to receive tips.
               </p>
               <p className="text-sm text-slate-500 mb-8">
-                Share your profile link: <code className="bg-slate-100 px-2 py-1 rounded">rontip.com/{formData.username}</code>
+                Share your profile link: <code className="bg-slate-100 px-2 py-1 rounded">rontip.com/{createdUsername}</code>
               </p>
               <div className="flex flex-col gap-3">
                 <a
-                  href={`/profile/${formData.username}`}
+                  href={`/profile/${createdUsername}`}
                   className="inline-flex items-center justify-center gap-2 bg-ronin text-white px-8 py-4 rounded-full font-semibold hover:bg-ronin-dark transition-all"
                 >
                   View Your Profile

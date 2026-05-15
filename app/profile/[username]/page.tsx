@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { creators, type Creator } from "@/lib/data";
+import { creators as defaultCreators, type Creator } from "@/lib/data";
 import { useWallet } from "@/hooks/useWallet";
 import { cn, truncateAddress, formatRON } from "@/lib/utils";
 import { 
@@ -18,9 +18,58 @@ import {
   TrendingUp
 } from "lucide-react";
 
+const STORAGE_KEY = "rontip_creators";
+
+// Helper to get creators from localStorage
+function getCreators(): Creator[] {
+  if (typeof window === "undefined") return defaultCreators;
+  
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Merge with default creators (stored ones override)
+      const defaultMap = new Map(defaultCreators.map(c => [c.username, c]));
+      parsed.forEach((c: Creator) => defaultMap.set(c.username, c));
+      return Array.from(defaultMap.values());
+    }
+  } catch (e) {
+    console.error("Error reading creators from localStorage:", e);
+  }
+  return defaultCreators;
+}
+
+// Helper to save creators to localStorage
+function saveCreator(updatedCreator: Creator) {
+  if (typeof window === "undefined") return;
+  
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    let creatorsList: Creator[] = stored ? JSON.parse(stored) : [];
+    
+    // Update or add the creator
+    const index = creatorsList.findIndex(c => c.username === updatedCreator.username);
+    if (index >= 0) {
+      creatorsList[index] = updatedCreator;
+    } else {
+      creatorsList.push(updatedCreator);
+    }
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(creatorsList));
+  } catch (e) {
+    console.error("Error saving creator to localStorage:", e);
+  }
+}
+
 export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const resolvedParams = use(params);
-  const creator = creators.find((c) => c.username === resolvedParams.username);
+  const [creatorsList, setCreatorsList] = useState<Creator[]>(defaultCreators);
+  
+  useEffect(() => {
+    setCreatorsList(getCreators());
+  }, []);
+  
+  const creator = creatorsList.find((c) => c.username === resolvedParams.username);
   
   const [tipAmount, setTipAmount] = useState("");
   const [message, setMessage] = useState("");
@@ -36,7 +85,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
     balance 
   } = useWallet();
 
-  if (!creator) {
+  if (!creator || !creator.name || !creator.roninAddress) {
     return (
       <main className="min-h-screen bg-slate-50">
         <Header />
@@ -64,6 +113,16 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
     setIsTipping(true);
     try {
       await sendTransaction(creator.roninAddress, tipAmount);
+      
+      // Update creator stats in localStorage
+      const updatedCreator = {
+        ...creator,
+        totalReceived: (parseFloat(creator.totalReceived) + parseFloat(tipAmount)).toString(),
+        tipCount: creator.tipCount + 1,
+      };
+      saveCreator(updatedCreator);
+      setCreatorsList(getCreators());
+      
       setTipSuccess(true);
       setTipAmount("");
       setMessage("");
