@@ -35,12 +35,14 @@ export function useWallet() {
 
   // Check if wallet is already connected
   useEffect(() => {
+    let provider: any = null;
+    
     const checkConnection = async () => {
       if (typeof window === "undefined") return;
 
-      // Try to get provider from window.ethereum
-      const provider = window.ethereum;
-      if (!provider) {
+      // Safely get provider with fallback
+      provider = window.ethereum;
+      if (!provider || typeof provider !== "object") {
         console.log("No wallet provider found");
         return;
       }
@@ -69,8 +71,7 @@ export function useWallet() {
     checkConnection();
 
     // Listen for account changes
-    const provider = window.ethereum;
-    if (provider) {
+    if (provider && typeof provider.on === "function") {
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
           setState({
@@ -92,7 +93,9 @@ export function useWallet() {
       provider.on("accountsChanged", handleAccountsChanged);
       
       return () => {
-        provider.removeListener("accountsChanged", handleAccountsChanged);
+        if (provider && typeof provider.removeListener === "function") {
+          provider.removeListener("accountsChanged", handleAccountsChanged);
+        }
       };
     }
   }, []);
@@ -170,11 +173,14 @@ export function useWallet() {
   }, []);
 
   const sendTransaction = useCallback(async (to: string, amount: string) => {
-    if (!state.address || !window.ethereum) {
+    if (!state.address) {
       throw new Error("Wallet not connected");
     }
 
     const provider = window.ethereum;
+    if (!provider || typeof provider !== "object") {
+      throw new Error("No wallet provider found");
+    }
     
     // Convert RON to wei (assuming 18 decimals)
     const value = "0x" + (parseFloat(amount) * Math.pow(10, 18)).toString(16);
