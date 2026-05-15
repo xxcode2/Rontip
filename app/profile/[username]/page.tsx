@@ -4,7 +4,7 @@ import { useState, use, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { creators as defaultCreators, type Creator } from "@/lib/data";
-import { useWallet } from "@/hooks/useWallet";
+import { useWallet } from "@/providers/WalletProvider";
 import { cn, truncateAddress, formatRON } from "@/lib/utils";
 import { 
   Wallet, 
@@ -64,8 +64,10 @@ function saveCreator(updatedCreator: Creator) {
 export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const resolvedParams = use(params);
   const [creatorsList, setCreatorsList] = useState<Creator[]>(defaultCreators);
+  const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
+    setMounted(true);
     setCreatorsList(getCreators());
   }, []);
   
@@ -85,7 +87,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
     balance 
   } = useWallet();
 
-  if (!creator || !creator.name || !creator.roninAddress) {
+  if (!mounted || !creator || !creator.name || !creator.roninAddress) {
     return (
       <main className="min-h-screen bg-slate-50">
         <Header />

@@ -3,13 +3,18 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Wallet, Menu, X, ChevronDown } from "lucide-react";
-import { useWallet } from "@/hooks/useWallet";
+import { useWallet } from "@/providers/WalletProvider";
 import { cn, truncateAddress } from "@/lib/utils";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { address, isConnected, connect, disconnect } = useWallet();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,7 +67,7 @@ export function Header() {
 
           {/* Wallet Button */}
           <div className="hidden md:block">
-            {isConnected ? (
+            {mounted && isConnected ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -77,7 +82,7 @@ export function Header() {
                   Disconnect
                 </button>
               </div>
-            ) : (
+            ) : mounted ? (
               <button
                 onClick={connect}
                 className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-full font-medium hover:bg-slate-800 transition-all hover:scale-105 shadow-lg"
@@ -85,7 +90,7 @@ export function Header() {
                 <Wallet className="w-4 h-4" />
                 Connect Wallet
               </button>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile Menu Button */}
@@ -127,7 +132,7 @@ export function Header() {
                 How it Works
               </Link>
               <div className="pt-2">
-                {isConnected ? (
+                {mounted && isConnected ? (
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-2 bg-slate-100 px-4 py-3 rounded-xl">
                       <div className="w-2 h-2 bg-green-500 rounded-full" />
@@ -145,7 +150,7 @@ export function Header() {
                       Disconnect
                     </button>
                   </div>
-                ) : (
+                ) : mounted ? (
                   <button
                     onClick={() => {
                       connect();
@@ -156,7 +161,7 @@ export function Header() {
                     <Wallet className="w-4 h-4" />
                     Connect Wallet
                   </button>
-                )}
+                ) : null}
               </div>
             </nav>
           </div>

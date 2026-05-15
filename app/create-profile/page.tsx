@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { useWallet } from "@/hooks/useWallet";
+import { useWallet } from "@/providers/WalletProvider";
 import { cn, truncateAddress } from "@/lib/utils";
 import { Wallet, User, FileText, Link as LinkIcon, Loader2, Check, Sparkles } from "lucide-react";
 
@@ -12,7 +12,12 @@ import { Wallet, User, FileText, Link as LinkIcon, Loader2, Check, Sparkles } fr
 import { creators, type Creator } from "@/lib/data";
 
 export default function CreateProfilePage() {
+  const [mounted, setMounted] = useState(false);
   const { address, isConnected, connect, balance } = useWallet();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -67,7 +72,7 @@ export default function CreateProfilePage() {
 
   const balanceRON = balance ? (parseInt(balance) / 1e18).toFixed(4) : "0";
 
-  if (!isConnected) {
+  if (!mounted || !isConnected) {
     return (
       <main className="min-h-screen bg-slate-50">
         <Header />
@@ -81,13 +86,15 @@ export default function CreateProfilePage() {
               <p className="text-slate-600 mb-8">
                 You need to connect your Ronin wallet to create a profile and receive tips.
               </p>
-              <button
-                onClick={connect}
-                className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-full font-semibold hover:bg-slate-800 transition-all hover:scale-105"
-              >
-                <Wallet className="w-5 h-5" />
-                Connect Wallet
-              </button>
+              {mounted && (
+                <button
+                  onClick={connect}
+                  className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-full font-semibold hover:bg-slate-800 transition-all hover:scale-105"
+                >
+                  <Wallet className="w-5 h-5" />
+                  Connect Wallet
+                </button>
+              )}
             </div>
           </div>
         </div>
